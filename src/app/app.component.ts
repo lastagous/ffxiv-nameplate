@@ -1,7 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterOutlet } from '@angular/router';
-import { fabric } from 'fabric';
 import { skip } from 'rxjs';
 
 @Component({
@@ -11,40 +10,61 @@ import { skip } from 'rxjs';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.less'],
 })
-export class AppComponent implements OnInit {
-  private canvas: fabric.Canvas;
+export class AppComponent implements AfterViewInit {
+  @ViewChild('canvas')
+  private canvas: ElementRef<HTMLCanvasElement> | undefined;
 
-  constructor(private route: ActivatedRoute) {
-    this.canvas = new fabric.Canvas('canvas');
+  private context: CanvasRenderingContext2D | undefined | null;
+
+  constructor(private route: ActivatedRoute) {}
+
+  async ngAfterViewInit(): Promise<void> {
+    this.context = this.canvas?.nativeElement.getContext('2d');
+    this.route.queryParams.pipe(skip(1)).subscribe(async (params) => {
+      if (this.context) {
+        await this.drawImage(this.context, '/assets/background.png');
+        await this.drawImage(this.context, '/assets/textarea.png');
+        if (params['admin'] === '1') {
+          await this.drawImage(this.context, '/assets/adminframe.png');
+        }
+        await this.drawImage(
+          this.context,
+          `/assets/icon/${params['job']}.png`,
+          400,
+          50,
+          0.7
+        );
+      } else {
+        console.log('Could not load canvas.');
+      }
+    });
   }
 
-  ngOnInit() {
-    this.route.queryParams.pipe(skip(1)).subscribe((params) => {
-      this.canvas = new fabric.Canvas('canvas', {
-        backgroundColor: '#000',
+  private async drawImage(
+    context: CanvasRenderingContext2D,
+    src: string,
+    x: number = 0,
+    y: number = 0,
+    scale: number = 1
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener('load', () => {
+        console.log(`[success] ${src} loaded.`);
+        context.drawImage(
+          image,
+          x,
+          y,
+          image.width * scale,
+          image.height * scale
+        );
+        resolve();
       });
-
-      if (params) {
-        fabric.Image.fromURL('/assets/background.png', (img) => {
-          img.selectable = false;
-          this.canvas.add(img);
-        });
-        fabric.Image.fromURL('/assets/textarea.png', (img) => {
-          img.selectable = false;
-          this.canvas.add(img);
-        });
-        fabric.Image.fromURL('/assets/adminframe.png', (img) => {
-          img.selectable = false;
-          this.canvas.add(img);
-        });
-        fabric.Image.fromURL(`/assets/icon/${params['job']}.png`, (img) => {
-          img.selectable = false;
-          img.left = 400;
-          img.top = 50;
-          img.scale(0.7);
-          this.canvas.add(img);
-        });
-      }
+      image.addEventListener('error', () => {
+        console.log(`[error] ${src} path iamge.`);
+        reject();
+      });
+      image.src = src;
     });
   }
 
