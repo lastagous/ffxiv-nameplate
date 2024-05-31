@@ -22,14 +22,14 @@ export class AppComponent implements AfterViewInit {
     this.context = this.canvas?.nativeElement.getContext('2d');
     this.route.queryParams.pipe(skip(1)).subscribe(async (params) => {
       if (this.context) {
-        await this.drawImage(this.context, '/assets/background.png');
-        await this.drawImage(this.context, '/assets/textarea.png');
+        await this.drawImage(this.context, 'assets/background.png');
+        await this.drawImage(this.context, 'assets/textarea.png');
         if (params['admin'] === '1') {
-          await this.drawImage(this.context, '/assets/adminframe.png');
+          await this.drawImage(this.context, 'assets/adminframe.png');
         }
         await this.drawImage(
           this.context,
-          `/assets/icon/${params['job']}.png`,
+          `assets/icon/${params['job']}.png`,
           400,
           50,
           0.7
